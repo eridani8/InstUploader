@@ -227,9 +227,19 @@ public class AppHandler(
 
                     var directory = Directory.GetFiles(Paths[i]).ToList();
                     if (directory.Count == 0) continue;
-
+                    
                     var file = directory.FirstOrDefault()!;
                     using var sync = new SyncService(deviceData);
+
+                    var files = await sync.GetDirectoryListingAsync(MediaDirectory);
+                    foreach (var fileStatistic in files)
+                    {
+                        await AdbClient.ExecuteRemoteCommandAsync(
+                            $"rm {MediaDirectory}/{fileStatistic.Path}",
+                            deviceData,
+                            lifetime.ApplicationStopping);
+                    }
+                    
                     await using var stream = File.OpenRead(file);
                     await sync.PushAsync(stream,
                         $"{MediaDirectory}/{Guid.CreateVersion7()}.mp4",
@@ -238,12 +248,12 @@ public class AppHandler(
                         lifetime.ApplicationStopping);
                     stream.Close();
 
-                    await AdbClient!.ExecuteRemoteCommandAsync(
+                    await AdbClient.ExecuteRemoteCommandAsync(
                         $"am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///{MediaDirectory}",
                         deviceData,
                         lifetime.ApplicationStopping);
 
-                    // File.Delete(file); // TODO
+                    File.Delete(file);
 
                     if (await device.IsAppRunningAsync(AppName, lifetime.ApplicationStopping))
                     {
