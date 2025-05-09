@@ -235,33 +235,39 @@ public class AppHandler(
                     await device.StartAppAsync(AppName);
                     await Task.Delay(TimeSpan.FromSeconds(@long));
                     
-                    var creationButton = await device.FindElementAsync(
+                    var creationTab = await device.FindElementAsync(
                         "//node[@resource-id='com.instagram.android:id/creation_tab']",
                         lifetime.ApplicationStopping);
-                    if (creationButton is not null)
+                    if (creationTab is not null)
                     {
-                        await creationButton.ClickAsync();
+                        await creationTab.ClickAsync();
+                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        var auxiliaryButton = await device.FindElementAsync(
+                            "//node[@resource-id='com.instagram.android:id/auxiliary_button']",
+                            lifetime.ApplicationStopping);
+                        if (auxiliaryButton is not null)
+                        {
+                            await auxiliaryButton.ClickAsync();
+                            await Task.Delay(TimeSpan.FromSeconds(small));
+                        }
                     }
                     else
                     {
                         throw new Exception("Creation Button Not Found");
                     }
-
-                    await Task.Delay(TimeSpan.FromSeconds(medium));
-
+                    
                     var firstVideoInGallery = await device.FindElementAsync(
-                        "//node[@resource-id='com.instagram.android:id/gallery_recycler_view']/node[@class='android.view.ViewGroup' and @clickable='true' and @enabled='true']",
+                        "//node[@resource-id='com.instagram.android:id/gallery_recycler_view']/node[@class='android.view.ViewGroup']",
                         lifetime.ApplicationStopping);
                     if (firstVideoInGallery is not null)
                     {
                         await firstVideoInGallery.ClickAsync();
+                        await Task.Delay(TimeSpan.FromSeconds(medium));
                     }
                     else
                     {
                         throw new Exception("FirstVideoInGallery Not Found");
                     }
-
-                    await Task.Delay(TimeSpan.FromSeconds(medium));
                     
                     var nextButton = await device.FindElementAsync(
                         "//node[@resource-id='com.instagram.android:id/clips_right_action_button']",
@@ -269,13 +275,12 @@ public class AppHandler(
                     if (nextButton is not null)
                     {
                         await nextButton.ClickAsync();
+                        await Task.Delay(TimeSpan.FromSeconds(medium));
                     }
                     else
                     {
                         throw new Exception("Next Button Not Found");
                     }
-
-                    await Task.Delay(TimeSpan.FromSeconds(medium));
 
                     var descriptionInput = await device.FindElementAsync(
                         "//node[@resource-id='com.instagram.android:id/caption_input_text_view']",
@@ -285,13 +290,14 @@ public class AppHandler(
                         await descriptionInput.ClickAsync();
                         await Task.Delay(TimeSpan.FromSeconds(small));
                         await descriptionInput.SendTextAsync(Description, lifetime.ApplicationStopping);
+                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        await device.ClickBackButtonAsync(lifetime.ApplicationStopping);
+                        await Task.Delay(TimeSpan.FromSeconds(small));
                     }
                     else
                     {
                         throw new Exception("Description Input Not Found");
                     }
-                    
-                    await Task.Delay(TimeSpan.FromSeconds(medium));
                     
                     await device.SwipeAsync(
                         width / 2, Convert.ToInt32(height / 1.3),
@@ -301,17 +307,26 @@ public class AppHandler(
 
                     await Task.Delay(TimeSpan.FromSeconds(medium));
 
-                    var checkbox = await device.FindElementAsync(
+                    var trialPeriodCheckbox = await device.FindElementAsync(
                         "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
                         lifetime.ApplicationStopping);
-                    if (checkbox is not null)
+                    if (trialPeriodCheckbox is not null)
                     {
-                        if (checkbox.Attributes != null &&
-                            checkbox.Attributes.TryGetValue("checked", out var checkedValue))
+                        if (trialPeriodCheckbox.Attributes != null &&
+                            trialPeriodCheckbox.Attributes.TryGetValue("checked", out var checkedValue))
                         {
                             if (checkedValue == "false")
                             {
-                                await checkbox.ClickAsync();
+                                await trialPeriodCheckbox.ClickAsync();
+                                await Task.Delay(TimeSpan.FromSeconds(small));
+                                var closeButton = await device.FindElementAsync(
+                                    "//node[@resource-id='com.instagram.android:id/bb_primary_action_container']",
+                                    lifetime.ApplicationStopping);
+                                if (closeButton is not null)
+                                {
+                                    await closeButton.ClickAsync();
+                                    await Task.Delay(TimeSpan.FromSeconds(small));
+                                }
                             }
                         }
                         else
@@ -322,6 +337,23 @@ public class AppHandler(
                     else
                     {
                         throw new Exception("Checkbox Not Found");
+                    }
+                    
+                    var shareButton = await device.FindElementAsync(
+                        "//node[@resource-id='com.instagram.android:id/share_button']",
+                        lifetime.ApplicationStopping);
+                    if (shareButton is not null)
+                    {
+                        await shareButton.ClickAsync();
+                        await Task.Delay(TimeSpan.FromSeconds(@long));
+                        var promoDialogCloseButton = await device.FindElementAsync(
+                            "//node[@resource-id='com.instagram.android:id/igds_promo_dialog_action_button']",
+                            lifetime.ApplicationStopping);
+                        if (promoDialogCloseButton is not null)
+                        {
+                            await promoDialogCloseButton.ClickAsync();
+                            await Task.Delay(TimeSpan.FromSeconds(small));
+                        }
                     }
 
                     var r = "";
