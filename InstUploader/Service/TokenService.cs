@@ -9,13 +9,14 @@ public class TokenService(IHostApplicationLifetime lifetime, IAppHandler handler
         while (!lifetime.ApplicationStopping.IsCancellationRequested)
         {
             var now = DateTime.Now;
-            foreach (var tokenData in handler.Tokens.Where(t => t.ExpiresAt >= now).ToList())
+            foreach (var token in handler.Tokens.ToList().Where(tokenData => tokenData.ExpiresAt <= now))
             {
-                await tokenData.CancellationTokenSource.CancelAsync();
-                handler.Tokens.Remove(tokenData);
+                await token.CancellationTokenSource.CancelAsync();
+                token.CancellationTokenSource.Dispose();
+                handler.RemoveToken(token);
             }
 
-            await Task.Delay(100, stoppingToken);
+            await Task.Delay(1000, stoppingToken);
         }
     }
 }

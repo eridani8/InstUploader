@@ -2,6 +2,6 @@
 
 public class CancellationTokenData(DateTime expiresAt)
 {
-    public CancellationTokenSource CancellationTokenSource { get; set; } = new();
-    public DateTime ExpiresAt { get; set; } = expiresAt;
+    public CancellationTokenSource CancellationTokenSource { get; } = new();
+    public DateTime ExpiresAt { get; } = expiresAt;
 }
