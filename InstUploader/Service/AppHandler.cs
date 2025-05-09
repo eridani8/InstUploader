@@ -1,6 +1,5 @@
 ﻿using System.Net.Http.Headers;
 using AdvancedSharpAdbClient;
-using AdvancedSharpAdbClient.DeviceCommands;
 using AdvancedSharpAdbClient.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -11,6 +10,7 @@ namespace InstUploader.Service;
 
 public interface IAppHandler
 {
+    List<CancellationTokenData> Tokens { get; }
     Task EnteringParameters();
     Task Connect();
     Task Process();
@@ -28,6 +28,7 @@ public class AppHandler(
     ILogger<AppHandler> logger)
     : IAppHandler
 {
+    public List<CancellationTokenData> Tokens { get; } = [];
     public string AdbPath { get; private set; } = string.Empty;
     public List<string> Paths { get; private set; } = [];
     public int Timeout { get; private set; }
@@ -195,8 +196,8 @@ public class AppHandler(
 
                     var device = deviceData.CreateDeviceClient(AdbClient);
 
-                    var dump = await device.DumpScreenAsync();
-                    dump?.Save("dump.xml");
+                    // var dump = await device.DumpScreenAsync();
+                    // dump?.Save("dump.xml");
 
                     var screen = await AdbClient.GetFrameBufferAsync(deviceData, lifetime.ApplicationStopping);
                     var height = (int)screen.Header.Height;
@@ -222,18 +223,18 @@ public class AppHandler(
                     
                     // File.Delete(file); // TODO
 
-                    const int small = 2;
-                    const int medium = 4;
-                    const int @long = 7;
+                    var small = TimeSpan.FromSeconds(2);
+                    var medium = TimeSpan.FromSeconds(4);
+                    var @long = TimeSpan.FromSeconds(7);
 
                     if (await device.IsAppRunningAsync(AppName, lifetime.ApplicationStopping))
                     {
                         await device.StopAppAsync(AppName);
-                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        await Task.Delay(small);
                     }
                     
                     await device.StartAppAsync(AppName);
-                    await Task.Delay(TimeSpan.FromSeconds(@long));
+                    await Task.Delay(@long);
                     
                     var creationTab = await device.FindElementAsync(
                         "//node[@resource-id='com.instagram.android:id/creation_tab']",
@@ -241,14 +242,18 @@ public class AppHandler(
                     if (creationTab is not null)
                     {
                         await creationTab.ClickAsync();
-                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        await Task.Delay(small);
+
+                        var ctd = new CancellationTokenData(DateTime.Now.Add(medium));
+                        Tokens.Add(ctd);
+                        
                         var auxiliaryButton = await device.FindElementAsync(
                             "//node[@resource-id='com.instagram.android:id/auxiliary_button']",
-                            lifetime.ApplicationStopping);
+                            ctd.CancellationTokenSource.Token);
                         if (auxiliaryButton is not null)
                         {
                             await auxiliaryButton.ClickAsync();
-                            await Task.Delay(TimeSpan.FromSeconds(small));
+                            await Task.Delay(small);
                         }
                     }
                     else
@@ -262,7 +267,7 @@ public class AppHandler(
                     if (firstVideoInGallery is not null)
                     {
                         await firstVideoInGallery.ClickAsync();
-                        await Task.Delay(TimeSpan.FromSeconds(medium));
+                        await Task.Delay(medium);
                     }
                     else
                     {
@@ -275,7 +280,7 @@ public class AppHandler(
                     if (nextButton is not null)
                     {
                         await nextButton.ClickAsync();
-                        await Task.Delay(TimeSpan.FromSeconds(medium));
+                        await Task.Delay(medium);
                     }
                     else
                     {
@@ -288,11 +293,11 @@ public class AppHandler(
                     if (descriptionInput is not null)
                     {
                         await descriptionInput.ClickAsync();
-                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        await Task.Delay(small);
                         await descriptionInput.SendTextAsync(Description, lifetime.ApplicationStopping);
-                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        await Task.Delay(small);
                         await device.ClickBackButtonAsync(lifetime.ApplicationStopping);
-                        await Task.Delay(TimeSpan.FromSeconds(small));
+                        await Task.Delay(small);
                     }
                     else
                     {
@@ -305,7 +310,7 @@ public class AppHandler(
                         300,
                         lifetime.ApplicationStopping);
 
-                    await Task.Delay(TimeSpan.FromSeconds(medium));
+                    await Task.Delay(medium);
 
                     var trialPeriodCheckbox = await device.FindElementAsync(
                         "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
@@ -318,14 +323,18 @@ public class AppHandler(
                             if (checkedValue == "false")
                             {
                                 await trialPeriodCheckbox.ClickAsync();
-                                await Task.Delay(TimeSpan.FromSeconds(small));
+                                await Task.Delay(small);
+                                
+                                var ctd = new CancellationTokenData(DateTime.Now.Add(medium));
+                                Tokens.Add(ctd);
+                                
                                 var closeButton = await device.FindElementAsync(
                                     "//node[@resource-id='com.instagram.android:id/bb_primary_action_container']",
-                                    lifetime.ApplicationStopping);
+                                    ctd.CancellationTokenSource.Token);
                                 if (closeButton is not null)
                                 {
                                     await closeButton.ClickAsync();
-                                    await Task.Delay(TimeSpan.FromSeconds(small));
+                                    await Task.Delay(small);
                                 }
                             }
                         }
@@ -345,14 +354,18 @@ public class AppHandler(
                     if (shareButton is not null)
                     {
                         await shareButton.ClickAsync();
-                        await Task.Delay(TimeSpan.FromSeconds(@long));
+                        await Task.Delay(@long);
+                        
+                        var ctd = new CancellationTokenData(DateTime.Now.Add(medium));
+                        Tokens.Add(ctd);
+                        
                         var promoDialogCloseButton = await device.FindElementAsync(
                             "//node[@resource-id='com.instagram.android:id/igds_promo_dialog_action_button']",
-                            lifetime.ApplicationStopping);
+                            ctd.CancellationTokenSource.Token);
                         if (promoDialogCloseButton is not null)
                         {
                             await promoDialogCloseButton.ClickAsync();
-                            await Task.Delay(TimeSpan.FromSeconds(small));
+                            await Task.Delay(small);
                         }
                     }
 
