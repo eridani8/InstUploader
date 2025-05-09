@@ -160,10 +160,28 @@ public class AppHandler(
 
         AnsiConsole.MarkupLine($"Найдено {Paths.Count} директорий".MarkupSecondaryColor());
 
-        Description = await AnsiConsole.PromptAsync(
-            new TextPrompt<string>("Введите описание".MarkupSecondaryColor())
-                .PromptStyle(style)
-                .AllowEmpty());
+        const string tagsFile = "tags.txt";
+        if (!File.Exists(tagsFile))
+        {
+            Description = await AnsiConsole.PromptAsync(
+                new TextPrompt<string>("Введите описание".MarkupSecondaryColor())
+                    .PromptStyle(style)
+                    .AllowEmpty());
+        }
+        else if (await File.ReadAllLinesAsync(tagsFile, lifetime.ApplicationStopping) is { Length: > 0 } readAllLines)
+        {
+            var randomNumber = Random.Shared.Next(0, readAllLines.Length);
+            var randomLine = readAllLines[randomNumber];
+            Description = randomLine;
+            AnsiConsole.MarkupLine($"Рандомное описание из tags.txt: {randomLine}".MarkupSecondaryColor());
+        }
+        else
+        {
+            Description = await AnsiConsole.PromptAsync(
+                new TextPrompt<string>("Введите описание".MarkupSecondaryColor())
+                    .PromptStyle(style)
+                    .AllowEmpty());
+        }
 
         var timeoutInMinutes = await AnsiConsole.PromptAsync(
             new TextPrompt<int>("Введите таймаут (мин)".MarkupSecondaryColor())
@@ -217,9 +235,11 @@ public class AppHandler(
                     if (deviceData.State != DeviceState.Online) continue;
 
                     var device = deviceData.CreateDeviceClient(AdbClient);
+                    
+                    AnsiConsole.MarkupLine($"Начало процесса отправки {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor());
 
-                    var dump = await device.DumpScreenAsync();
-                    dump?.Save("dump.xml");
+                    // var dump = await device.DumpScreenAsync();
+                    // dump?.Save("dump.xml");
 
                     var screen = await AdbClient.GetFrameBufferAsync(deviceData, lifetime.ApplicationStopping);
                     var height = (int)screen.Header.Height;
@@ -426,6 +446,13 @@ public class AppHandler(
                     }
 
                     await Task.Delay(_mediumDelay);
+
+                    while (device.FindElement("//node[@resource-id='com.instagram.android:id/upload_progress_bar_container']", _mediumDelay) is not null)
+                    {
+                        await Task.Delay(_mediumDelay);
+                    }
+                    
+                    AnsiConsole.MarkupLine($"Успешная публикация {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor());
                 }
                 catch (Exception e)
                 {
