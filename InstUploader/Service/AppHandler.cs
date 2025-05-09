@@ -34,10 +34,10 @@ public class AppHandler(
     public string Description { get; private set; } = string.Empty;
     private List<DeviceData> Devices { get; set; } = [];
     private IAdbClient? AdbClient { get; set; }
-    
+
     private const string AppName = "com.instagram.android";
     private const string MediaDirectory = "storage/emulated/0/DCIM";
-    
+
     private readonly TimeSpan _smallDelay = TimeSpan.FromSeconds(2);
     private readonly TimeSpan _mediumDelay = TimeSpan.FromSeconds(4);
     private readonly TimeSpan _longDelay = TimeSpan.FromSeconds(7);
@@ -170,7 +170,7 @@ public class AppHandler(
                 .PromptStyle(style)
                 .ValidationErrorMessage("Неверный формат".MarkupErrorColor())
                 .Validate(t => t > 0));
-        
+
         Timeout = TimeSpan.FromMinutes(timeoutInMinutes);
     }
 
@@ -401,13 +401,29 @@ public class AppHandler(
                             await Task.Delay(_smallDelay);
                         }
                     }
+
+                    await Task.Delay(_mediumDelay);
                 }
                 catch (Exception e)
                 {
                     logger.LogError(e, "Ошибка в процессе");
                 }
+
+                await AnsiConsole.Status()
+                    .Spinner(Spinner.Known.Balloon)
+                    .SpinnerStyle(style)
+                    .StartAsync("Таймаут...", async ctx =>
+                    {
+                        var secondsRemaining = (int)Timeout.TotalSeconds;
+                        while (secondsRemaining > 0)
+                        {
+                            ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
+                            await Task.Delay(1000, lifetime.ApplicationStopping);
+                            secondsRemaining--;
+                        }
+                    });
                 
-                await Task.Delay(Timeout, lifetime.ApplicationStopping);
+                AnsiConsole.WriteLine();
             }
         }
     }
