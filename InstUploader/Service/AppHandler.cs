@@ -218,16 +218,19 @@ public class AppHandler(
 
                     var device = deviceData.CreateDeviceClient(AdbClient);
 
-                    // var dump = await device.DumpScreenAsync();
-                    // dump?.Save("dump.xml");
+                    var dump = await device.DumpScreenAsync();
+                    dump?.Save("dump.xml");
 
                     var screen = await AdbClient.GetFrameBufferAsync(deviceData, lifetime.ApplicationStopping);
                     var height = (int)screen.Header.Height;
                     var width = (int)screen.Header.Width;
 
                     var directory = Directory.GetFiles(Paths[i]).ToList();
-                    if (directory.Count == 0) continue;
-                    
+                    if (directory.Count == 0)
+                    {
+                        throw new Exception($"Нет файлов в директории: {Paths[i]}");
+                    }
+
                     var file = directory.FirstOrDefault()!;
                     using var sync = new SyncService(deviceData);
 
@@ -239,7 +242,7 @@ public class AppHandler(
                             deviceData,
                             lifetime.ApplicationStopping);
                     }
-                    
+
                     await using var stream = File.OpenRead(file);
                     await sync.PushAsync(stream,
                         $"{MediaDirectory}/{Guid.CreateVersion7()}.mp4",
@@ -366,9 +369,9 @@ public class AppHandler(
 
                     await Task.Delay(_mediumDelay);
 
-                    var trialPeriodCheckbox = await device.FindElementAsync(
+                    var trialPeriodCheckbox = device.FindElement(
                         "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
-                        lifetime.ApplicationStopping);
+                        _smallDelay);
                     if (trialPeriodCheckbox is not null)
                     {
                         if (trialPeriodCheckbox.Attributes != null &&
@@ -411,30 +414,41 @@ public class AppHandler(
                             await promoDialogCloseButton.ClickAsync();
                             await Task.Delay(_smallDelay);
                         }
+
+                        var sharePopupCloseButton = device.FindElement(
+                            "//node[@resource-id='com.instagram.android:id/clips_nux_sheet_share_button']",
+                            _smallDelay);
+                        if (sharePopupCloseButton is not null)
+                        {
+                            await sharePopupCloseButton.ClickAsync();
+                            await Task.Delay(_smallDelay);
+                        }
                     }
 
                     await Task.Delay(_mediumDelay);
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "Ошибка в процессе");
+                    logger.LogError(e, e.Message);
                 }
-
-                await AnsiConsole.Status()
-                    .Spinner(Spinner.Known.Balloon)
-                    .SpinnerStyle(style)
-                    .StartAsync("Таймаут...", async ctx =>
-                    {
-                        var secondsRemaining = (int)Timeout.TotalSeconds;
-                        while (secondsRemaining > 0)
+                finally
+                {
+                    await AnsiConsole.Status()
+                        .Spinner(Spinner.Known.Balloon)
+                        .SpinnerStyle(style)
+                        .StartAsync("Таймаут...", async ctx =>
                         {
-                            ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
-                            await Task.Delay(1000, lifetime.ApplicationStopping);
-                            secondsRemaining--;
-                        }
-                    });
+                            var secondsRemaining = (int)Timeout.TotalSeconds;
+                            while (secondsRemaining > 0)
+                            {
+                                ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
+                                await Task.Delay(1000, lifetime.ApplicationStopping);
+                                secondsRemaining--;
+                            }
+                        });
                 
-                AnsiConsole.WriteLine();
+                    AnsiConsole.WriteLine();
+                }
             }
         }
     }
