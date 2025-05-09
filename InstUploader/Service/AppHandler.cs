@@ -347,6 +347,7 @@ public class AppHandler(
                         await descriptionInput.ClickAsync();
                         await Task.Delay(_smallDelay);
                         await ClipboardService.SetTextAsync(string.Empty);
+                        await Task.Delay(_smallDelay);
                         await descriptionInput.SendTextAsync(Description);
                         await Task.Delay(_smallDelay);
                         await device.ClickBackButtonAsync(lifetime.ApplicationStopping);
