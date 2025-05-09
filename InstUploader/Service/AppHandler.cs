@@ -195,8 +195,6 @@ public class AppHandler(
 
                     var device = deviceData.CreateDeviceClient(AdbClient);
 
-                    var timer = new Timer(TimerCallback, device, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-
                     var dump = await device.DumpScreenAsync();
                     dump?.Save("dump.xml");
 
@@ -327,34 +325,12 @@ public class AppHandler(
                     }
 
                     var r = "";
-
-                    await timer.DisposeAsync();
                 }
                 catch (Exception e)
                 {
                     logger.LogError(e, "Ошибка в процессе");
                 }
             }
-        }
-    }
-
-    private async void TimerCallback(object? state)
-    {
-        try
-        {
-            if (state is not DeviceClient device) return;
-        
-            var auxiliaryButton = await device.FindElementAsync(
-                "//node[@resource-id='com.instagram.android:id/auxiliary_button']",
-                lifetime.ApplicationStopping);
-            if (auxiliaryButton is not null)
-            {
-                await auxiliaryButton.ClickAsync();
-            }
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Ошибка в методе поиска попапов");
         }
     }
 }
