@@ -18,6 +18,7 @@
         <PackageReference Include="Serilog.Sinks.Spectre" Version="0.5.0"/>
         <PackageReference Include="Spectre.Console" Version="0.50.0" />
         <PackageReference Include="AdvancedSharpAdbClient" Version="3.4.14" />
+        <PackageReference Include="TextCopy" Version="6.2.1" />
     </ItemGroup>
     
     <ItemGroup>
