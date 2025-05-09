@@ -453,30 +453,30 @@ public class AppHandler(
                     }
                     
                     AnsiConsole.MarkupLine($"Успешная публикация {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor());
+
+                    await Task.Delay(_smallDelay);
                 }
                 catch (Exception e)
                 {
                     logger.LogError(e, e.Message);
                 }
-                finally
-                {
-                    await AnsiConsole.Status()
-                        .Spinner(Spinner.Known.Balloon)
-                        .SpinnerStyle(style)
-                        .StartAsync("Таймаут...", async ctx =>
-                        {
-                            var secondsRemaining = (int)Timeout.TotalSeconds;
-                            while (secondsRemaining > 0)
-                            {
-                                ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
-                                await Task.Delay(1000, lifetime.ApplicationStopping);
-                                secondsRemaining--;
-                            }
-                        });
-                
-                    AnsiConsole.WriteLine();
-                }
             }
+            
+            await AnsiConsole.Status()
+                .Spinner(Spinner.Known.Balloon)
+                .SpinnerStyle(style)
+                .StartAsync("Таймаут...", async ctx =>
+                {
+                    var secondsRemaining = (int)Timeout.TotalSeconds;
+                    while (secondsRemaining > 0)
+                    {
+                        ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
+                        await Task.Delay(1000, lifetime.ApplicationStopping);
+                        secondsRemaining--;
+                    }
+                });
+                
+            AnsiConsole.WriteLine();
         }
     }
 }
