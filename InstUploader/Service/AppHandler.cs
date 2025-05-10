@@ -36,7 +36,7 @@ public class AppHandler(
     private IAdbClient? AdbClient { get; set; }
 
     private const string AppName = "com.instagram.android";
-    private const string MediaDirectory = "storage/emulated/0/DCIM";
+    private const string MediaDirectory = "storage/emulated/0/Pictures";
 
     private readonly TimeSpan _smallDelay = TimeSpan.FromSeconds(2);
     private readonly TimeSpan _mediumDelay = TimeSpan.FromSeconds(4);
@@ -187,7 +187,7 @@ public class AppHandler(
             new TextPrompt<int>("Введите таймаут (мин)".MarkupSecondaryColor())
                 .PromptStyle(style)
                 .ValidationErrorMessage("Неверный формат".MarkupErrorColor())
-                .Validate(t => t > 0));
+                .Validate(t => t >= 0));
 
         Timeout = TimeSpan.FromMinutes(timeoutInMinutes);
     }
@@ -252,6 +252,7 @@ public class AppHandler(
                     }
 
                     var file = directory.FirstOrDefault()!;
+                    
                     using var sync = new SyncService(deviceData);
 
                     await using var stream = File.OpenRead(file);
