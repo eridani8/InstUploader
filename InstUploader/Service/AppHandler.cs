@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using AdvancedSharpAdbClient;
+using AdvancedSharpAdbClient.DeviceCommands;
 using AdvancedSharpAdbClient.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -228,13 +229,14 @@ public class AppHandler(
 
         while (!lifetime.ApplicationStopping.IsCancellationRequested)
         {
-            foreach (var (i, deviceData) in Devices.Index())
+            for (var i = 0; i < Devices.Count; i++)
             {
                 try
                 {
+                    var deviceData = Devices[i];
+                    var device = new DeviceClient(AdbClient, deviceData);
+                    
                     if (deviceData.State != DeviceState.Online) continue;
-
-                    var device = deviceData.CreateDeviceClient(AdbClient);
                     
                     AnsiConsole.MarkupLine($"Начало процесса отправки {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor());
 
@@ -436,9 +438,9 @@ public class AppHandler(
 
                     await Task.Delay(_mediumDelay);
 
-                    while (device.FindElement("//node[@resource-id='com.instagram.android:id/upload_progress_bar_container']", _mediumDelay) is not null)
+                    while (device.FindElement("//node[@resource-id='com.instagram.android:id/upload_progress_bar_container']", _smallDelay) is not null)
                     {
-                        await Task.Delay(_mediumDelay);
+                        await Task.Delay(_smallDelay);
                     }
                     
                     AnsiConsole.MarkupLine($"Успешная публикация {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor());
