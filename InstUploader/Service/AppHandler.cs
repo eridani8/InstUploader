@@ -257,20 +257,17 @@ public class AppHandler(
 
                     using var sync = new SyncService(deviceData);
                     
-                    if (configuration.Value.FileMode == LoadFileMode.Default)
-                    {
-                        await using var stream = File.OpenRead(file);
-                        await sync.PushAsync(stream,
-                            $"{MediaDirectory}/{Guid.CreateVersion7()}.mp4",
-                            UnixFileStatus.DefaultFileMode, DateTimeOffset.Now,
-                            null,
-                            lifetime.ApplicationStopping);
-                        stream.Close();
+                    await using var stream = File.OpenRead(file);
+                    await sync.PushAsync(stream,
+                        $"{MediaDirectory}/{Guid.CreateVersion7()}.mp4",
+                        UnixFileStatus.DefaultFileMode, DateTimeOffset.Now,
+                        null,
+                        lifetime.ApplicationStopping);
+                    stream.Close();
 
-                        await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
+                    await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
 
-                        File.Delete(file);
-                    }
+                    File.Delete(file);
 
                     if (await device.IsAppRunningAsync(AppName, lifetime.ApplicationStopping))
                     {
@@ -450,22 +447,16 @@ public class AppHandler(
 
                     await Task.Delay(_smallDelay);
 
-                    if (configuration.Value.FileMode == LoadFileMode.Default)
+                    var files = await sync.GetDirectoryListingAsync(MediaDirectory);
+                    foreach (var fileStatistic in files)
                     {
-                        var files = await sync.GetDirectoryListingAsync(MediaDirectory);
-                        foreach (var fileStatistic in files)
-                        {
-                            await device.DeleteFile($"{MediaDirectory}/{fileStatistic.Path}",
-                                lifetime.ApplicationStopping);
-                        }
+                        await device.DeleteFile($"{MediaDirectory}/{fileStatistic.Path}",
+                            lifetime.ApplicationStopping);
+                    }
 
-                        await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
-                    }
-                    else if (configuration.Value.FileMode == LoadFileMode.SharedFolder)
-                    {
-                        File.Delete(file);
-                        await Task.Delay(_mediumDelay);
-                    }
+                    await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
+                    
+                    await Task.Delay(_smallDelay);
                 }
                 catch (Exception e)
                 {
