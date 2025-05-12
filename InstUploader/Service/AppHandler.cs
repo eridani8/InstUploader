@@ -484,15 +484,7 @@ public class AppHandler(
             {
                 throw new Exception("Description Input Not Found");
             }
-
-            await device.SwipeAsync(
-                width / 2, Convert.ToInt32(height / 1.3),
-                width / 2, Convert.ToInt32(height / 3.3),
-                300,
-                lifetime.ApplicationStopping);
-
-            await Task.Delay(_mediumDelay, cts.Token);
-
+            
             var trialPeriodCheckbox = device.FindElement(
                 "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
                 _smallDelay);
@@ -519,6 +511,45 @@ public class AppHandler(
                 else
                 {
                     throw new Exception("Checkbox Attribute Not Found");
+                }
+            }
+            else
+            {
+                await device.SwipeAsync(
+                    width / 2, Convert.ToInt32(height / 1.3),
+                    width / 2, Convert.ToInt32(height / 3.3),
+                    300,
+                    lifetime.ApplicationStopping);
+
+                await Task.Delay(_mediumDelay, cts.Token);
+
+                var trialPeriodCheckbox1 = device.FindElement(
+                    "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
+                    _smallDelay);
+                if (trialPeriodCheckbox1 is not null)
+                {
+                    if (trialPeriodCheckbox1.Attributes != null &&
+                        trialPeriodCheckbox1.Attributes.TryGetValue("checked", out var checkedValue))
+                    {
+                        if (checkedValue == "false")
+                        {
+                            await trialPeriodCheckbox1.ClickAsync(cts.Token);
+                            await Task.Delay(_smallDelay, cts.Token);
+
+                            var closeButton = device.FindElement(
+                                "//node[@resource-id='com.instagram.android:id/bb_primary_action_container']",
+                                _smallDelay);
+                            if (closeButton is not null)
+                            {
+                                await closeButton.ClickAsync(cts.Token);
+                                await Task.Delay(_smallDelay, cts.Token);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Checkbox Attribute Not Found");
+                    }
                 }
             }
 
