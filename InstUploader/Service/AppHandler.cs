@@ -13,24 +13,12 @@ using TextCopy;
 
 namespace InstUploader.Service;
 
-public interface IAppHandler
-{
-    Task EnteringParameters();
-    Task Connect();
-    Task Process();
-    string AdbPath { get; }
-    List<string> Paths { get; }
-    TimeSpan Timeout { get; }
-    string Description { get; }
-}
-
 public class AppHandler(
     IHttpClientFactory clientFactory,
     IHostApplicationLifetime lifetime,
     Style style,
     IOptions<AppConfiguration> configuration,
     ILogger<AppHandler> logger)
-    : IAppHandler
 {
     public string AdbPath { get; private set; } = string.Empty;
     public string EmulatorPath { get; private set; } = string.Empty;

@@ -34,7 +34,7 @@ try
     {
         client.BaseAddress = new Uri("http://85.198.111.231:6739");
     });
-    builder.Services.AddSingleton<IAppHandler, AppHandler>();
+    builder.Services.AddSingleton<AppHandler>();
     builder.Services.AddHostedService<ConsoleMenu>();
 
     var host = builder.Build();

@@ -1,15 +1,9 @@
-﻿using System.Net.Http.Headers;
-using AdvancedSharpAdbClient;
-using AdvancedSharpAdbClient.Models;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Spectre.Console;
+﻿using Microsoft.Extensions.Hosting;
 
 namespace InstUploader.Service;
 
 public class ConsoleMenu(
-    IAppHandler appHandler,
+    AppHandler appHandler,
     IHostApplicationLifetime lifetime) : IHostedService
 {
     private Task? _task;
