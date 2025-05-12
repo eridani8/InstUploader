@@ -312,7 +312,7 @@ public class AppHandler(
                 .WithArguments($"-avd {avd}")
                 .ExecuteAsync(cts.Token);
 
-            await Task.Delay(_mediumDelay, cts.Token);
+            await Task.Delay(_longDelay, cts.Token);
 
             await AdbClient.ConnectAsync(configuration.Value.Host, cts.Token);
 
@@ -321,7 +321,7 @@ public class AppHandler(
             {
                 var devices = (await AdbClient.GetDevicesAsync(cts.Token));
                 deviceData = devices.FirstOrDefault(d => d.State == DeviceState.Online);
-                if (deviceData != default && !string.IsNullOrWhiteSpace(deviceData.Serial))
+                if (!deviceData.IsEmpty)
                 {
                     var receiver = new ConsoleOutputReceiver();
                     await AdbClient.ExecuteRemoteCommandAsync("getprop sys.boot_completed", deviceData, receiver,
@@ -333,7 +333,7 @@ public class AppHandler(
                     }
                 }
 
-                await Task.Delay(_mediumDelay, cts.Token);
+                await Task.Delay(_longDelay, cts.Token);
             }
 
             var device = new DeviceClient(AdbClient, deviceData);

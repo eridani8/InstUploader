@@ -1,5 +1,4 @@
-﻿using AdvancedSharpAdbClient;
-using InstUploader;
+﻿using InstUploader;
 using InstUploader.Service;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
