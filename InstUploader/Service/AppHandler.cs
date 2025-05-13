@@ -316,6 +316,8 @@ public class AppHandler(
 
             await AdbClient.ConnectAsync(configuration.Value.Host, cts.Token);
 
+            var continueAt = DateTime.Now.AddMinutes(5);
+            
             DeviceData deviceData = default;
             while (!cts.IsCancellationRequested)
             {
@@ -331,6 +333,13 @@ public class AppHandler(
                     {
                         break;
                     }
+                }
+
+                if (DateTime.Now >= continueAt)
+                {
+                    AnsiConsole.MarkupLine("Таймаут ожидания загрузки устройства".MarkupErrorColor());
+                    
+                    return;
                 }
 
                 await Task.Delay(_longDelay, cts.Token);
