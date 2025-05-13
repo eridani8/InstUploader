@@ -19,7 +19,8 @@ public class AppHandler(
     IHostApplicationLifetime lifetime,
     Style style,
     IOptions<AppConfiguration> configuration,
-    ILogger<AppHandler> logger)
+    ILogger<AppHandler> logger
+)
 {
     public string AdbPath { get; private set; } = string.Empty;
     public string EmulatorPath { get; private set; } = string.Empty;
@@ -46,11 +47,8 @@ public class AppHandler(
             RequestUri = new Uri($"{client.BaseAddress}Check"),
             Content = new StringContent($"{{\"key\":\"{code}\"}}")
             {
-                Headers =
-                {
-                    ContentType = new MediaTypeHeaderValue("application/json")
-                }
-            }
+                Headers = { ContentType = new MediaTypeHeaderValue("application/json") },
+            },
         };
         using var response = await client.SendAsync(request);
         return response.IsSuccessStatusCode;
@@ -59,7 +57,7 @@ public class AppHandler(
     public async Task EnteringParameters()
     {
         Directory.CreateDirectory(AdbLogsPath);
-        
+
         while (!lifetime.ApplicationStopping.IsCancellationRequested)
         {
             string code;
@@ -69,13 +67,13 @@ public class AppHandler(
                     new TextPrompt<string>($"{"Введите код".MarkupSecondaryColor()}")
                         .PromptStyle(style)
                         .ValidationErrorMessage("Неверный формат".MarkupErrorColor())
-                        .Validate(c => Guid.TryParse(c, out _)));
+                        .Validate(c => Guid.TryParse(c, out _))
+                );
             }
             else
             {
                 code = configuration.Value.Code;
             }
-
 
             var result = await CheckCode(code);
             if (!result)
@@ -99,10 +97,13 @@ public class AppHandler(
             if (string.IsNullOrEmpty(configuration.Value.AdbPath))
             {
                 AdbPath = await AnsiConsole.PromptAsync(
-                    new TextPrompt<string>("Введите путь к директории с adb.exe".MarkupSecondaryColor())
+                    new TextPrompt<string>(
+                        "Введите путь к директории с adb.exe".MarkupSecondaryColor()
+                    )
                         .PromptStyle(style)
                         .ValidationErrorMessage("Директория не найдена".MarkupErrorColor())
-                        .Validate(Path.Exists));
+                        .Validate(Path.Exists)
+                );
             }
             else
             {
@@ -116,7 +117,8 @@ public class AppHandler(
                 AnsiConsole.MarkupLine("adb.exe не найден...".MarkupErrorColor());
                 configuration.Value.AdbPath = string.Empty;
             }
-            else break;
+            else
+                break;
         }
 
         while (!lifetime.ApplicationStopping.IsCancellationRequested)
@@ -124,10 +126,13 @@ public class AppHandler(
             if (string.IsNullOrEmpty(configuration.Value.EmulatorPath))
             {
                 EmulatorPath = await AnsiConsole.PromptAsync(
-                    new TextPrompt<string>("Введите путь к директории эмулятора".MarkupSecondaryColor())
+                    new TextPrompt<string>(
+                        "Введите путь к директории эмулятора".MarkupSecondaryColor()
+                    )
                         .PromptStyle(style)
                         .ValidationErrorMessage("Директория не найдена".MarkupErrorColor())
-                        .Validate(Path.Exists));
+                        .Validate(Path.Exists)
+                );
             }
             else
             {
@@ -141,12 +146,15 @@ public class AppHandler(
                 AnsiConsole.MarkupLine("emulator.exe не найден...".MarkupErrorColor());
                 configuration.Value.EmulatorPath = string.Empty;
             }
-            else break;
+            else
+                break;
         }
 
         if (!string.IsNullOrEmpty(configuration.Value.EmulatorPath))
         {
-            AnsiConsole.MarkupLine("Путь к эмулятору загружен из конфигурации".MarkupSecondaryColor());
+            AnsiConsole.MarkupLine(
+                "Путь к эмулятору загружен из конфигурации".MarkupSecondaryColor()
+            );
         }
 
         var directoriesPath = string.Empty;
@@ -159,7 +167,8 @@ public class AppHandler(
                     new TextPrompt<string>("Введите путь к списку папок".MarkupSecondaryColor())
                         .PromptStyle(style)
                         .ValidationErrorMessage("Директория не найдена".MarkupErrorColor())
-                        .Validate(Directory.Exists));
+                        .Validate(Directory.Exists)
+                );
             }
             else
             {
@@ -170,12 +179,15 @@ public class AppHandler(
             {
                 configuration.Value.DirectoriesPath = string.Empty;
             }
-            else break;
+            else
+                break;
         }
 
         if (!string.IsNullOrEmpty(configuration.Value.DirectoriesPath))
         {
-            AnsiConsole.MarkupLine("Путь к директориям загружен из конфигурации".MarkupSecondaryColor());
+            AnsiConsole.MarkupLine(
+                "Путь к директориям загружен из конфигурации".MarkupSecondaryColor()
+            );
         }
 
         Paths = Directory.EnumerateDirectories(directoriesPath).ToList();
@@ -188,28 +200,36 @@ public class AppHandler(
             Description = await AnsiConsole.PromptAsync(
                 new TextPrompt<string>("Введите описание".MarkupSecondaryColor())
                     .PromptStyle(style)
-                    .AllowEmpty());
+                    .AllowEmpty()
+            );
         }
-        else if (await File.ReadAllLinesAsync(tagsFile, lifetime.ApplicationStopping) is { Length: > 0 } readAllLines)
+        else if (
+            await File.ReadAllLinesAsync(tagsFile, lifetime.ApplicationStopping) is
+            { Length: > 0 } readAllLines
+        )
         {
             var randomNumber = Random.Shared.Next(0, readAllLines.Length);
             var randomLine = readAllLines[randomNumber];
             Description = randomLine;
-            AnsiConsole.MarkupLine($"Рандомное описание из tags.txt: {randomLine}".MarkupSecondaryColor());
+            AnsiConsole.MarkupLine(
+                $"Рандомное описание из tags.txt: {randomLine}".MarkupSecondaryColor()
+            );
         }
         else
         {
             Description = await AnsiConsole.PromptAsync(
                 new TextPrompt<string>("Введите описание".MarkupSecondaryColor())
                     .PromptStyle(style)
-                    .AllowEmpty());
+                    .AllowEmpty()
+            );
         }
 
         var timeoutInMinutes = await AnsiConsole.PromptAsync(
             new TextPrompt<int>("Введите таймаут (мин)".MarkupSecondaryColor())
                 .PromptStyle(style)
                 .ValidationErrorMessage("Неверный формат".MarkupErrorColor())
-                .Validate(t => t >= 0));
+                .Validate(t => t >= 0)
+        );
 
         Timeout = TimeSpan.FromMinutes(timeoutInMinutes);
     }
@@ -223,19 +243,12 @@ public class AppHandler(
             .WithStandardOutputPipe(PipeTarget.ToStringBuilder(devicesStringBuilder))
             .ExecuteAsync(lifetime.ApplicationStopping);
 
-        Avds = devicesStringBuilder.ToString()
+        Avds = devicesStringBuilder
+            .ToString()
             .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
             .ToList();
 
-        string[] processNames = ["emulator", "qemu-system-x86_64", "crashpad_handler"];
-        foreach (var processName in processNames)
-        {
-            foreach (var emulator in System.Diagnostics.Process.GetProcessesByName(processName))
-            {
-                emulator.Kill();
-                await emulator.WaitForExitAsync();
-            }
-        }
+        await KillEmulatorProcesses();
 
         var server = new AdbServer();
         await server.StartServerAsync(AdbPath, true, lifetime.ApplicationStopping);
@@ -246,9 +259,14 @@ public class AppHandler(
         {
             AnsiConsole.MarkupLine("Количество эмуляторов и папок не совпадает".MarkupErrorColor());
             AnsiConsole.MarkupLine(
-                $"{"Эмуляторов:".MarkupPrimaryColor()} {Avds.Count.ToString().MarkupSecondaryColor()}");
-            AnsiConsole.MarkupLine($"{"Папок:".MarkupPrimaryColor()} {Paths.Count.ToString().MarkupSecondaryColor()}");
-            AnsiConsole.MarkupLine("Нажмите любую клавишу, что бы продолжить...".MarkupSecondaryColor());
+                $"{"Эмуляторов:".MarkupPrimaryColor()} {Avds.Count.ToString().MarkupSecondaryColor()}"
+            );
+            AnsiConsole.MarkupLine(
+                $"{"Папок:".MarkupPrimaryColor()} {Paths.Count.ToString().MarkupSecondaryColor()}"
+            );
+            AnsiConsole.MarkupLine(
+                "Нажмите любую клавишу, что бы продолжить...".MarkupSecondaryColor()
+            );
             Console.ReadKey(true);
         }
     }
@@ -263,28 +281,30 @@ public class AppHandler(
                 {
                     await HandleProcess(avd, Paths[i]);
                 }
-                catch (OperationCanceledException)
-                {
-                }
+                catch (OperationCanceledException) { }
                 catch (Exception e)
                 {
                     logger.LogError(e, e.Message);
                 }
             }
 
-            await AnsiConsole.Status()
+            await AnsiConsole
+                .Status()
                 .Spinner(Spinner.Known.Balloon)
                 .SpinnerStyle(style)
-                .StartAsync("Таймаут...", async ctx =>
-                {
-                    var secondsRemaining = (int)Timeout.TotalSeconds;
-                    while (secondsRemaining > 0)
+                .StartAsync(
+                    "Таймаут...",
+                    async ctx =>
                     {
-                        ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
-                        await Task.Delay(1000, lifetime.ApplicationStopping);
-                        secondsRemaining--;
+                        var secondsRemaining = (int)Timeout.TotalSeconds;
+                        while (secondsRemaining > 0)
+                        {
+                            ctx.Status($"Возобновление через {secondsRemaining} секунд(ы)...");
+                            await Task.Delay(1000, lifetime.ApplicationStopping);
+                            secondsRemaining--;
+                        }
                     }
-                });
+                );
 
             AnsiConsole.WriteLine();
         }
@@ -298,7 +318,9 @@ public class AppHandler(
             if (AdbClient is null)
             {
                 AnsiConsole.MarkupLine("Нет запущенных эмуляторов".MarkupErrorColor());
-                AnsiConsole.MarkupLine("Нажмите любую клавишу для выхода...".MarkupSecondaryColor());
+                AnsiConsole.MarkupLine(
+                    "Нажмите любую клавишу для выхода...".MarkupSecondaryColor()
+                );
                 Console.ReadKey(true);
                 return;
             }
@@ -306,19 +328,25 @@ public class AppHandler(
             if (Avds.Count == 0)
             {
                 AnsiConsole.MarkupLine("Нет загруженных эмуляторов".MarkupErrorColor());
-                AnsiConsole.MarkupLine("Нажмите любую клавишу для выхода...".MarkupSecondaryColor());
+                AnsiConsole.MarkupLine(
+                    "Нажмите любую клавишу для выхода...".MarkupSecondaryColor()
+                );
                 Console.ReadKey(true);
                 return;
             }
-            
+
             var port = FindFreeEvenPortInRange();
-            
+
             var now = DateTime.Now;
-            
-            var cmd = Cli.Wrap(EmulatorPath)
+
+            var emulatorProcess = Cli.Wrap(EmulatorPath)
                 .WithArguments($"-avd {avd} -port {port}")
-                .WithStandardOutputPipe(PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"output_{now:HH_mm_ss}.log")))
-                .WithStandardErrorPipe(PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"error_{now:HH_mm_ss}.log")))
+                .WithStandardOutputPipe(
+                    PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"output_{now:HH_mm_ss}.log"))
+                )
+                .WithStandardErrorPipe(
+                    PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"error_{now:HH_mm_ss}.log"))
+                )
                 .ExecuteAsync(cts.Token);
 
             await Task.Delay(_longDelay, cts.Token);
@@ -326,17 +354,21 @@ public class AppHandler(
             await AdbClient.ConnectAsync($"127.0.0.1:{port}", cts.Token);
 
             var continueAt = DateTime.Now.AddMinutes(5);
-            
+
             DeviceData deviceData = default;
             while (!cts.IsCancellationRequested)
             {
-                var devices = (await AdbClient.GetDevicesAsync(cts.Token));
+                var devices = await AdbClient.GetDevicesAsync(cts.Token);
                 deviceData = devices.FirstOrDefault(d => d.State == DeviceState.Online);
                 if (!deviceData.IsEmpty)
                 {
                     var receiver = new ConsoleOutputReceiver();
-                    await AdbClient.ExecuteRemoteCommandAsync("getprop sys.boot_completed", deviceData, receiver,
-                        cts.Token);
+                    await AdbClient.ExecuteRemoteCommandAsync(
+                        "getprop sys.boot_completed",
+                        deviceData,
+                        receiver,
+                        cts.Token
+                    );
                     var output = receiver.ToString().Trim();
                     if (output == "1")
                     {
@@ -346,8 +378,10 @@ public class AppHandler(
 
                 if (DateTime.Now >= continueAt)
                 {
-                    AnsiConsole.MarkupLine("Таймаут ожидания загрузки устройства".MarkupErrorColor());
-                    
+                    AnsiConsole.MarkupLine(
+                        "Таймаут ожидания загрузки устройства".MarkupErrorColor()
+                    );
+
                     return;
                 }
 
@@ -356,13 +390,17 @@ public class AppHandler(
 
             var device = new DeviceClient(AdbClient, deviceData);
 
-            AnsiConsole.MarkupLine($"Начало процесса отправки {deviceData.Model}".EscapeMarkup()
-                .MarkupPrimaryColor());
+            AnsiConsole.MarkupLine(
+                $"Начало процесса отправки {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor()
+            );
 
             // var dump = await device.DumpScreenAsync();
             // dump?.Save("dump.xml");
 
-            var screen = await AdbClient.GetFrameBufferAsync(deviceData, lifetime.ApplicationStopping);
+            var screen = await AdbClient.GetFrameBufferAsync(
+                deviceData,
+                lifetime.ApplicationStopping
+            );
             var height = (int)screen.Header.Height;
             var width = (int)screen.Header.Width;
 
@@ -377,11 +415,14 @@ public class AppHandler(
             using var sync = new SyncService(deviceData);
 
             await using var stream = File.OpenRead(file);
-            await sync.PushAsync(stream,
+            await sync.PushAsync(
+                stream,
                 $"{MediaDirectory}/{Guid.CreateVersion7()}.mp4",
-                UnixFileStatus.DefaultFileMode, DateTimeOffset.Now,
+                UnixFileStatus.DefaultFileMode,
+                DateTimeOffset.Now,
                 null,
-                lifetime.ApplicationStopping);
+                lifetime.ApplicationStopping
+            );
             stream.Close();
 
             await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
@@ -399,7 +440,8 @@ public class AppHandler(
 
             var creationTab = await device.FindElementAsync(
                 "//node[@resource-id='com.instagram.android:id/creation_tab']",
-                lifetime.ApplicationStopping);
+                lifetime.ApplicationStopping
+            );
             if (creationTab is not null)
             {
                 await creationTab.ClickAsync(cts.Token);
@@ -407,7 +449,8 @@ public class AppHandler(
 
                 var continueVideoEditCloseButton = device.FindElement(
                     "//node[@resource-id='com.instagram.android:id/auxiliary_button']",
-                    _smallDelay);
+                    _smallDelay
+                );
                 if (continueVideoEditCloseButton is not null)
                 {
                     await continueVideoEditCloseButton.ClickAsync(cts.Token);
@@ -421,7 +464,8 @@ public class AppHandler(
 
             var selectReelsButton = device.FindElement(
                 "//node[@resource-id='com.instagram.android:id/cam_dest_clips']",
-                _smallDelay);
+                _smallDelay
+            );
             if (selectReelsButton is not null)
             {
                 await selectReelsButton.ClickAsync(cts.Token);
@@ -430,7 +474,8 @@ public class AppHandler(
 
             var reelsPopupCloseButton = device.FindElement(
                 "//node[@resource-id='com.instagram.android:id/dialog_container']//node[@resource-id='com.instagram.android:id/primary_button' and @text='ОК']",
-                _smallDelay);
+                _smallDelay
+            );
             if (reelsPopupCloseButton is not null)
             {
                 await reelsPopupCloseButton.ClickAsync(cts.Token);
@@ -439,7 +484,8 @@ public class AppHandler(
 
             var firstVideoInGallery = await device.FindElementAsync(
                 "//node[@resource-id='com.instagram.android:id/gallery_recycler_view']/node[@class='android.view.ViewGroup']",
-                lifetime.ApplicationStopping);
+                lifetime.ApplicationStopping
+            );
             if (firstVideoInGallery is not null)
             {
                 await firstVideoInGallery.ClickAsync(cts.Token);
@@ -447,7 +493,8 @@ public class AppHandler(
 
                 var stickerDialogCloseButton = device.FindElement(
                     "//node[@resource-id='com.instagram.android:id/auxiliary_button']",
-                    _smallDelay);
+                    _smallDelay
+                );
                 if (stickerDialogCloseButton is not null)
                 {
                     await stickerDialogCloseButton.ClickAsync(cts.Token);
@@ -461,7 +508,8 @@ public class AppHandler(
 
             var nextButton = await device.FindElementAsync(
                 "//node[@resource-id='com.instagram.android:id/clips_right_action_button']",
-                lifetime.ApplicationStopping);
+                lifetime.ApplicationStopping
+            );
             if (nextButton is not null)
             {
                 await nextButton.ClickAsync(cts.Token);
@@ -474,7 +522,8 @@ public class AppHandler(
 
             var descriptionInput = await device.FindElementAsync(
                 "//node[@resource-id='com.instagram.android:id/caption_input_text_view']",
-                lifetime.ApplicationStopping);
+                lifetime.ApplicationStopping
+            );
             if (descriptionInput is not null)
             {
                 await descriptionInput.ClickAsync(cts.Token);
@@ -490,14 +539,17 @@ public class AppHandler(
             {
                 throw new Exception("Description Input Not Found");
             }
-            
+
             var trialPeriodCheckbox = device.FindElement(
                 "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
-                _smallDelay);
+                _smallDelay
+            );
             if (trialPeriodCheckbox is not null)
             {
-                if (trialPeriodCheckbox.Attributes != null &&
-                    trialPeriodCheckbox.Attributes.TryGetValue("checked", out var checkedValue))
+                if (
+                    trialPeriodCheckbox.Attributes != null
+                    && trialPeriodCheckbox.Attributes.TryGetValue("checked", out var checkedValue)
+                )
                 {
                     if (checkedValue == "false")
                     {
@@ -506,7 +558,8 @@ public class AppHandler(
 
                         var closeButton = device.FindElement(
                             "//node[@resource-id='com.instagram.android:id/bb_primary_action_container']",
-                            _smallDelay);
+                            _smallDelay
+                        );
                         if (closeButton is not null)
                         {
                             await closeButton.ClickAsync(cts.Token);
@@ -522,20 +575,29 @@ public class AppHandler(
             else
             {
                 await device.SwipeAsync(
-                    width / 2, Convert.ToInt32(height / 1.3),
-                    width / 2, Convert.ToInt32(height / 3.3),
+                    width / 2,
+                    Convert.ToInt32(height / 1.3),
+                    width / 2,
+                    Convert.ToInt32(height / 3.3),
                     300,
-                    lifetime.ApplicationStopping);
+                    lifetime.ApplicationStopping
+                );
 
                 await Task.Delay(_mediumDelay, cts.Token);
 
                 var trialPeriodCheckbox1 = device.FindElement(
                     "//node[@resource-id='com.instagram.android:id/title' and @text='Пробный период']",
-                    _smallDelay);
+                    _smallDelay
+                );
                 if (trialPeriodCheckbox1 is not null)
                 {
-                    if (trialPeriodCheckbox1.Attributes != null &&
-                        trialPeriodCheckbox1.Attributes.TryGetValue("checked", out var checkedValue))
+                    if (
+                        trialPeriodCheckbox1.Attributes != null
+                        && trialPeriodCheckbox1.Attributes.TryGetValue(
+                            "checked",
+                            out var checkedValue
+                        )
+                    )
                     {
                         if (checkedValue == "false")
                         {
@@ -544,7 +606,8 @@ public class AppHandler(
 
                             var closeButton = device.FindElement(
                                 "//node[@resource-id='com.instagram.android:id/bb_primary_action_container']",
-                                _smallDelay);
+                                _smallDelay
+                            );
                             if (closeButton is not null)
                             {
                                 await closeButton.ClickAsync(cts.Token);
@@ -561,7 +624,8 @@ public class AppHandler(
 
             var shareButton = await device.FindElementAsync(
                 "//node[@resource-id='com.instagram.android:id/share_button']",
-                lifetime.ApplicationStopping);
+                lifetime.ApplicationStopping
+            );
             if (shareButton is not null)
             {
                 await shareButton.ClickAsync(cts.Token);
@@ -569,7 +633,8 @@ public class AppHandler(
 
                 var promoDialogCloseButton = device.FindElement(
                     "//node[@resource-id='com.instagram.android:id/igds_promo_dialog_action_button']",
-                    _smallDelay);
+                    _smallDelay
+                );
                 if (promoDialogCloseButton is not null)
                 {
                     await promoDialogCloseButton.ClickAsync(cts.Token);
@@ -578,7 +643,8 @@ public class AppHandler(
 
                 var sharePopupCloseButton = device.FindElement(
                     "//node[@resource-id='com.instagram.android:id/clips_nux_sheet_share_button']",
-                    _smallDelay);
+                    _smallDelay
+                );
                 if (sharePopupCloseButton is not null)
                 {
                     await sharePopupCloseButton.ClickAsync(cts.Token);
@@ -588,34 +654,58 @@ public class AppHandler(
 
             await Task.Delay(_mediumDelay, cts.Token);
 
-            while (device.FindElement(
-                       "//node[@resource-id='com.instagram.android:id/upload_progress_bar_container']",
-                       _smallDelay) is not null)
+            while (
+                device.FindElement(
+                    "//node[@resource-id='com.instagram.android:id/upload_progress_bar_container']",
+                    _smallDelay
+                )
+                    is not null
+            )
             {
                 await Task.Delay(_smallDelay, cts.Token);
             }
 
             AnsiConsole.MarkupLine(
-                $"Успешная публикация {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor());
+                $"Успешная публикация {deviceData.Model}".EscapeMarkup().MarkupPrimaryColor()
+            );
 
             await Task.Delay(_smallDelay, cts.Token);
 
             var files = await sync.GetDirectoryListingAsync(MediaDirectory, cts.Token);
             foreach (var fileStatistic in files)
             {
-                await device.DeleteFile($"{MediaDirectory}/{fileStatistic.Path}",
-                    lifetime.ApplicationStopping);
+                await device.DeleteFile(
+                    $"{MediaDirectory}/{fileStatistic.Path}",
+                    lifetime.ApplicationStopping
+                );
             }
 
             await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
 
             await Task.Delay(_smallDelay, cts.Token);
-            
+
             await AdbClient.DisconnectAsync($"127.0.0.1:{port}", cts.Token);
+
+            try
+            {
+                var receiver = new ConsoleOutputReceiver();
+                await AdbClient.ExecuteRemoteCommandAsync(
+                    "emu kill",
+                    deviceData,
+                    receiver,
+                    cts.Token
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning($"Error killing emulator: {ex.Message}");
+            }
+
+            await Task.Delay(_mediumDelay, cts.Token);
+
+            await KillEmulatorProcesses();
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception e)
         {
             logger.LogError(e, e.Message);
@@ -625,7 +715,27 @@ public class AppHandler(
             await cts.CancelAsync();
         }
     }
-    
+
+    private async Task KillEmulatorProcesses()
+    {
+        string[] processNames = ["emulator", "qemu-system-x86_64", "crashpad_handler"];
+        foreach (var processName in processNames)
+        {
+            foreach (var emulator in System.Diagnostics.Process.GetProcessesByName(processName))
+            {
+                try
+                {
+                    emulator.Kill(true);
+                    await emulator.WaitForExitAsync();
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, e.Message);
+                }
+            }
+        }
+    }
+
     private static int FindFreeEvenPortInRange(int start = 5554, int end = 5680)
     {
         for (var port = start; port <= end; port += 2)
@@ -635,7 +745,8 @@ public class AppHandler(
                 .GetActiveTcpListeners()
                 .Any(p => p.Port == port || p.Port == port + 1);
 
-            if (!portInUse) return port;
+            if (!portInUse)
+                return port;
         }
 
         throw new InvalidOperationException("Нет свободного порта");
