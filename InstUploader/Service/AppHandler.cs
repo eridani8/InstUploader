@@ -10,7 +10,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Spectre.Console;
-using TextCopy;
 
 namespace InstUploader.Service;
 
@@ -339,8 +338,12 @@ public class AppHandler(
 
             var now = DateTime.Now;
 
+            await KillEmulatorProcesses();
+            
+            await Task.Delay(_mediumDelay, cts.Token);
+
             var emulatorProcess = Cli.Wrap(EmulatorPath)
-                .WithArguments($"-avd {avd} -port {port}")
+                .WithArguments($"-avd {avd} -port {port} -no-snapshot-load -no-snapshot-save")
                 .WithStandardOutputPipe(
                     PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"output_{now:HH_mm_ss}.log"))
                 )
@@ -349,11 +352,13 @@ public class AppHandler(
                 )
                 .ExecuteAsync(cts.Token);
 
-            await Task.Delay(_longDelay, cts.Token);
+            await Task.Delay(_longDelay * 2, cts.Token);
 
             await AdbClient.ConnectAsync($"127.0.0.1:{port}", cts.Token);
 
             var continueAt = DateTime.Now.AddMinutes(5);
+
+            AnsiConsole.MarkupLine("Ожидание полной загрузки...".MarkupPrimaryColor());
 
             DeviceData deviceData = default;
             while (!cts.IsCancellationRequested)
@@ -374,6 +379,12 @@ public class AppHandler(
                     {
                         break;
                     }
+
+                    AnsiConsole.MarkupLine("*".MarkupPrimaryColor());
+                }
+                else
+                {
+                    AnsiConsole.MarkupLine("~".MarkupPrimaryColor());
                 }
 
                 if (DateTime.Now >= continueAt)
@@ -387,6 +398,10 @@ public class AppHandler(
 
                 await Task.Delay(_longDelay, cts.Token);
             }
+
+            AnsiConsole.MarkupLine("+".MarkupPrimaryColor());
+
+            await Task.Delay(_longDelay, cts.Token);
 
             var device = new DeviceClient(AdbClient, deviceData);
 
@@ -527,8 +542,6 @@ public class AppHandler(
             if (descriptionInput is not null)
             {
                 await descriptionInput.ClickAsync(cts.Token);
-                await Task.Delay(_smallDelay, cts.Token);
-                await ClipboardService.SetTextAsync(string.Empty, cts.Token);
                 await Task.Delay(_smallDelay, cts.Token);
                 await descriptionInput.SendTextAsync(Description, cts.Token);
                 await Task.Delay(_smallDelay, cts.Token);
@@ -684,26 +697,36 @@ public class AppHandler(
 
             await Task.Delay(_smallDelay, cts.Token);
 
-            await AdbClient.DisconnectAsync($"127.0.0.1:{port}", cts.Token);
-
             try
             {
+                await AdbClient.DisconnectAsync($"127.0.0.1:{port}", cts.Token);
+
                 var receiver = new ConsoleOutputReceiver();
-                await AdbClient.ExecuteRemoteCommandAsync(
-                    "emu kill",
-                    deviceData,
-                    receiver,
-                    cts.Token
-                );
+                try
+                {
+                    await AdbClient.ExecuteRemoteCommandAsync(
+                        "emu kill",
+                        deviceData,
+                        receiver,
+                        cts.Token
+                    );
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning($"Expected emu kill error: {ex.Message}");
+                }
+
+                await Task.Delay(_longDelay, cts.Token);
+
+                await KillEmulatorProcesses();
+
+                await Task.Delay(_longDelay, cts.Token);
             }
             catch (Exception ex)
             {
-                logger.LogWarning($"Error killing emulator: {ex.Message}");
+                logger.LogWarning($"Error during emulator shutdown: {ex.Message}");
+                await KillEmulatorProcesses();
             }
-
-            await Task.Delay(_mediumDelay, cts.Token);
-
-            await KillEmulatorProcesses();
         }
         catch (OperationCanceledException) { }
         catch (Exception e)
@@ -734,6 +757,8 @@ public class AppHandler(
                 }
             }
         }
+        
+        await Task.Delay(TimeSpan.FromSeconds(3));
     }
 
     private static int FindFreeEvenPortInRange(int start = 5554, int end = 5680)
