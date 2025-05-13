@@ -428,7 +428,9 @@ public class AppHandler(
             var file = directory.FirstOrDefault()!;
 
             using var sync = new SyncService(deviceData);
-
+            
+            AnsiConsole.MarkupLine("Загрузка файла...".MarkupPrimaryColor());
+            
             await using var stream = File.OpenRead(file);
             await sync.PushAsync(
                 stream,
@@ -443,6 +445,8 @@ public class AppHandler(
             await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
 
             File.Delete(file);
+            
+            AnsiConsole.MarkupLine("Загружен".MarkupPrimaryColor());
 
             if (await device.IsAppRunningAsync(AppName, lifetime.ApplicationStopping))
             {
@@ -452,6 +456,8 @@ public class AppHandler(
 
             await device.StartAppAsync(AppName, cts.Token);
             await Task.Delay(_longDelay, cts.Token);
+            
+            AnsiConsole.MarkupLine("Выполнение скрипта...".MarkupPrimaryColor());
 
             var creationTab = await device.FindElementAsync(
                 "//node[@resource-id='com.instagram.android:id/creation_tab']",
@@ -692,10 +698,16 @@ public class AppHandler(
                     lifetime.ApplicationStopping
                 );
             }
+            
+            AnsiConsole.MarkupLine("Очистка файлов...".MarkupPrimaryColor());
 
             await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
 
             await Task.Delay(_smallDelay, cts.Token);
+            
+            AnsiConsole.MarkupLine("Остановка эмулятора...".MarkupPrimaryColor());
+            
+            await device.StopAppAsync(AppName, cts.Token);
 
             try
             {
