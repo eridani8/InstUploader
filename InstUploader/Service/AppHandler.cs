@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
 using System.Text;
 using AdvancedSharpAdbClient;
 using AdvancedSharpAdbClient.DeviceCommands;
@@ -237,7 +238,6 @@ public class AppHandler(
         await server.StartServerAsync(AdbPath, true, lifetime.ApplicationStopping);
 
         AdbClient = new AdbClient();
-        await AdbClient.ConnectAsync(configuration.Value.Host);
 
         if (Avds.Count != Paths.Count)
         {
@@ -308,13 +308,21 @@ public class AppHandler(
                 return;
             }
             
+            var port = FindFreeEvenPortInRange();
+
+            var logsPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "adb_logs"));
+            Directory.CreateDirectory(logsPath);
+            var now = DateTime.Now;
+            
             var cmd = Cli.Wrap(EmulatorPath)
-                .WithArguments($"-avd {avd}")
+                .WithArguments($"-avd {avd} -port {port}")
+                .WithStandardOutputPipe(PipeTarget.ToFile(Path.Combine(logsPath, $"output_{now:HH_mm_ss}.log")))
+                .WithStandardErrorPipe(PipeTarget.ToFile(Path.Combine(logsPath, $"error_{now:HH_mm_ss}.log")))
                 .ExecuteAsync(cts.Token);
 
             await Task.Delay(_longDelay, cts.Token);
 
-            await AdbClient.ConnectAsync(configuration.Value.Host, cts.Token);
+            await AdbClient.ConnectAsync($"127.0.0.1:{port}", cts.Token);
 
             var continueAt = DateTime.Now.AddMinutes(5);
             
@@ -601,6 +609,8 @@ public class AppHandler(
             await device.UpdateMediaState(MediaDirectory, lifetime.ApplicationStopping);
 
             await Task.Delay(_smallDelay, cts.Token);
+            
+            await AdbClient.DisconnectAsync($"127.0.0.1:{port}", cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -613,5 +623,20 @@ public class AppHandler(
         {
             await cts.CancelAsync();
         }
+    }
+    
+    private static int FindFreeEvenPortInRange(int start = 5554, int end = 5680)
+    {
+        for (var port = start; port <= end; port += 2)
+        {
+            var portInUse = IPGlobalProperties
+                .GetIPGlobalProperties()
+                .GetActiveTcpListeners()
+                .Any(p => p.Port == port || p.Port == port + 1);
+
+            if (!portInUse) return port;
+        }
+
+        throw new InvalidOperationException("Нет свободного порта");
     }
 }
