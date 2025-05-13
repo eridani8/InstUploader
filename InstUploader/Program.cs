@@ -8,9 +8,7 @@ using Serilog.Sinks.Spectre;
 using Spectre.Console;
 
 const string outputTemplate = "[{Timestamp:yyyy-MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}";
-var logsPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs"));
-
-
+const string logsPath = "logs";
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()

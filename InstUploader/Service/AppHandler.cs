@@ -29,6 +29,7 @@ public class AppHandler(
     private List<string> Avds { get; set; } = [];
     private IAdbClient? AdbClient { get; set; }
 
+    private const string AdbLogsPath = "adb_logs";
     private const string AppName = "com.instagram.android";
     private const string MediaDirectory = "storage/emulated/0/Pictures";
 
@@ -57,6 +58,8 @@ public class AppHandler(
 
     public async Task EnteringParameters()
     {
+        Directory.CreateDirectory(AdbLogsPath);
+        
         while (!lifetime.ApplicationStopping.IsCancellationRequested)
         {
             string code;
@@ -309,15 +312,13 @@ public class AppHandler(
             }
             
             var port = FindFreeEvenPortInRange();
-
-            var logsPath = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "adb_logs"));
-            Directory.CreateDirectory(logsPath);
+            
             var now = DateTime.Now;
             
             var cmd = Cli.Wrap(EmulatorPath)
                 .WithArguments($"-avd {avd} -port {port}")
-                .WithStandardOutputPipe(PipeTarget.ToFile(Path.Combine(logsPath, $"output_{now:HH_mm_ss}.log")))
-                .WithStandardErrorPipe(PipeTarget.ToFile(Path.Combine(logsPath, $"error_{now:HH_mm_ss}.log")))
+                .WithStandardOutputPipe(PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"output_{now:HH_mm_ss}.log")))
+                .WithStandardErrorPipe(PipeTarget.ToFile(Path.Combine(AdbLogsPath, $"error_{now:HH_mm_ss}.log")))
                 .ExecuteAsync(cts.Token);
 
             await Task.Delay(_longDelay, cts.Token);
