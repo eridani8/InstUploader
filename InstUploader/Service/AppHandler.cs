@@ -279,6 +279,7 @@ public class AppHandler(
                 try
                 {
                     await HandleProcess(avd, Paths[i]);
+                    await Task.Delay(_longDelay);
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception e)
@@ -334,7 +335,7 @@ public class AppHandler(
                 return;
             }
 
-            var port = FindFreeEvenPortInRange();
+            const int port = 5554;
 
             var now = DateTime.Now;
 
@@ -731,8 +732,6 @@ public class AppHandler(
                 await Task.Delay(_longDelay, cts.Token);
 
                 await KillEmulatorProcesses();
-
-                await Task.Delay(_longDelay, cts.Token);
             }
             catch (Exception ex)
             {
